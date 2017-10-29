@@ -39,8 +39,12 @@ int main()
   // Read map data
   Map map;
   if (!read_map_data("../data/map_data.txt", map)) {
-	  cout << "Error: Could not open map file" << endl;
-	  return -1;
+      if (!read_map_data("../../data/map_data.txt", map)) {
+          // To take into account the fact that xcode places
+          // the executable in a Debug folder
+          cout << "Error: Could not open map file" << endl;
+          return -1;
+      }
   }
 
   // Create particle filter
@@ -72,7 +76,7 @@ int main()
 			double sense_y = std::stod(j[1]["sense_y"].get<std::string>());
 			double sense_theta = std::stod(j[1]["sense_theta"].get<std::string>());
 
-			pf.init(sense_x, sense_y, sense_theta, sigma_pos);
+			assert(pf.init(sense_x, sense_y, sense_theta, sigma_pos));
 		  }
 		  else {
 			// Predict the vehicle's next state from previous (noiseless control) data.
@@ -115,7 +119,7 @@ int main()
 		  pf.resample();
 
 		  // Calculate and output the average weighted error of the particle filter over all time steps so far.
-		  vector<Particle> particles = pf.particles;
+		  vector<Particle> particles = pf.particles();
 		  int num_particles = particles.size();
 		  double highest_weight = -1.0;
 		  Particle best_particle;
@@ -131,9 +135,9 @@ int main()
 		  cout << "average w " << weight_sum/num_particles << endl;
 
           json msgJson;
-          msgJson["best_particle_x"] = best_particle.x;
-          msgJson["best_particle_y"] = best_particle.y;
-          msgJson["best_particle_theta"] = best_particle.theta;
+            msgJson["best_particle_x"] = 0.0F;//best_particle.x;
+          msgJson["best_particle_y"] = 0.0F;//best_particle.y;
+          msgJson["best_particle_theta"] = 0.0F;//best_particle.theta;
 
           //Optional message data used for debugging particle's sensing and associations
           msgJson["best_particle_associations"] = pf.getAssociations(best_particle);

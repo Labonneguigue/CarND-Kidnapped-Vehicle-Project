@@ -14,17 +14,38 @@
 #include <sstream>
 #include <string>
 #include <iterator>
-
+#include <cassert>
 #include "particle_filter.h"
 
+#define ALMOST_ZERO 0.00001
 using namespace std;
 
-void ParticleFilter::init(double x, double y, double theta, double std[]) {
+bool ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of 
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
+    // This line creates 3 normal (Gaussian) distributions for x, y and theta
+    normal_distribution<double> dist_x(x, std[0]);
+    normal_distribution<double> dist_y(y, std[1]);
+    normal_distribution<double> dist_theta(theta, std[2]);
+
+    // Instantiation of a random nomber generator
+    default_random_engine gen;
+
+    for (int nbParticles = 0; nbParticles < mNbParticles; ++nbParticles) {
+        double sample_x, sample_y, sample_theta;
+        // I draw random samples from each gaussian distribution to
+        // create the particles.
+        sample_x = dist_x(gen);
+        sample_y = dist_y(gen);
+        sample_theta = dist_theta(gen);	 
+        Particle newParticle(nbParticles, sample_x, sample_y, sample_theta);
+        mParticles.push_back(newParticle);
+    }
+    mIsInitialized = true;
+    return true;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
@@ -33,6 +54,34 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 
+    // Instantiation of a random nomber generator
+    default_random_engine gen;
+    assert(mNbParticles == mParticles.size());
+
+    for (int nbParticles = 0; nbParticles < mNbParticles; ++nbParticles) {
+        double newXpos, newYpos, newTheta;
+        if (yaw_rate > ALMOST_ZERO){
+            newTheta = mParticles[nbParticles].theta + delta_t * yaw_rate;
+
+            newXpos = mParticles[nbParticles].x + ((velocity / yaw_rate) *
+            (std::sin(newTheta) - std::sin(mParticles[nbParticles].theta)));
+
+            newYpos = mParticles[nbParticles].y + ((velocity / yaw_rate) *
+            (std::sin(mParticles[nbParticles].theta) - std::cos(newTheta)));
+        }
+        else
+        {
+            newXpos = mParticles[nbParticles].x + (delta_t * velocity * cos(mParticles[nbParticles].theta));
+            newYpos = mParticles[nbParticles].y + (delta_t * velocity * sin(mParticles[nbParticles].theta));
+        }
+        // This line creates 3 normal (Gaussian) distributions for x, y and theta
+        // to sample from.
+        normal_distribution<double> dist_x(newXpos, std[0]);
+        normal_distribution<double> dist_y(y, std[1]);
+        normal_distribution<double> dist_theta(theta, std[2]);
+
+        mParticles[nbParticles].x =
+    }
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {

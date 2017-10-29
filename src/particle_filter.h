@@ -21,31 +21,32 @@ struct Particle {
 	std::vector<int> associations;
 	std::vector<double> sense_x;
 	std::vector<double> sense_y;
+
+    Particle(int id_ = -1,
+             double x_ = 0.0F,
+             double y_ = 0.0F,
+             double theta_ = 0.0F,
+             double weight_ = 1.0F)
+    : id(id_)
+    , x(x_)
+    , y(y_)
+    , theta(theta_)
+    , weight(weight_)
+    {}
 };
 
 
 
 class ParticleFilter {
 	
-	// Number of particles to draw
-	int num_particles; 
-	
-	
-	
-	// Flag, if filter is initialized
-	bool is_initialized;
-	
-	// Vector of weights of all particles
-	std::vector<double> weights;
-	
 public:
-	
-	// Set of current particles
-	std::vector<Particle> particles;
 
 	// Constructor
 	// @param num_particles Number of particles
-	ParticleFilter() : num_particles(0), is_initialized(false) {}
+	ParticleFilter()
+    : mNbParticles(1000),
+      mIsInitialized(false)
+    {}
 
 	// Destructor
 	~ParticleFilter() {}
@@ -58,8 +59,9 @@ public:
 	 * @param theta Initial orientation [rad]
 	 * @param std[] Array of dimension 3 [standard deviation of x [m], standard deviation of y [m]
 	 *   standard deviation of yaw [rad]]
+     * @return bool True if the initialization was successful
 	 */
-	void init(double x, double y, double theta, double std[]);
+	bool init(double x, double y, double theta, double std[]);
 
 	/**
 	 * prediction Predicts the state for the next time step
@@ -110,9 +112,30 @@ public:
 	/**
 	 * initialized Returns whether particle filter is initialized yet or not.
 	 */
-	const bool initialized() const {
-		return is_initialized;
+	inline const bool initialized() const {
+		return mIsInitialized;
 	}
+
+    inline const std::vector<Particle>& particles(){
+        return mParticles;
+    }
+
+private:
+
+    // Number of particles to draw
+    const int mNbParticles;
+
+    // Flag, if filter is initialized
+    // TODO: delete that
+    bool mIsInitialized;
+
+    // Vector of weights of all particles
+    std::vector<double> mWeights;
+
+    // Set of current particles
+    std::vector<Particle> mParticles;
+
+    
 };
 
 
