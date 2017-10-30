@@ -73,14 +73,17 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
         {
             newXpos = mParticles[nbParticles].x + (delta_t * velocity * cos(mParticles[nbParticles].theta));
             newYpos = mParticles[nbParticles].y + (delta_t * velocity * sin(mParticles[nbParticles].theta));
+            newTheta = mParticles[nbParticles].theta;
         }
         // This line creates 3 normal (Gaussian) distributions for x, y and theta
         // to sample from.
-        normal_distribution<double> dist_x(newXpos, std[0]);
-        normal_distribution<double> dist_y(y, std[1]);
-        normal_distribution<double> dist_theta(theta, std[2]);
+        normal_distribution<double> dist_x(newXpos, std_pos[0]);
+        normal_distribution<double> dist_y(newYpos, std_pos[1]);
+        normal_distribution<double> dist_theta(newTheta, std_pos[2]);
 
-        mParticles[nbParticles].x =
+        mParticles[nbParticles].x = dist_x(gen);
+        mParticles[nbParticles].y = dist_y(gen);
+        mParticles[nbParticles].theta = dist_theta(gen);
     }
 }
 
@@ -90,6 +93,27 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 
+    // The idea is to assign the id of the closest predicted landmark to the id member of the observations
+    // landmarks.
+    double distance;
+    double minDistance;
+    int index;
+    for (int obs = 0 ; obs < observations.size() ; obs++){
+        minDistance = std::numeric_limits<double>::max();
+        index = 0;
+        for (int pre = 0 ; pre < predicted.size() ; pre++){
+            distance = dist(observations[obs].x, observations[obs].y, predicted[pre].x, predicted[pre].y);
+            if ( distance < minDistance ){
+                minDistance = distance;
+                index = pre;
+            }
+        }
+        // index of the closest prediction is in the index variable.
+        observations[obs].id = predicted[index].id;
+        // TODO: Check that this is possible
+        // Improves efficiency
+        predicted.erase(predicted.begin() + index);
+    }
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
@@ -104,6 +128,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   and the following is a good resource for the actual equation to implement (look at equation 
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
+
+
 }
 
 void ParticleFilter::resample() {
@@ -111,6 +137,20 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
+    vector<Particle> newSetParticles;
+    float randomNumber;
+
+    // I assume the weights add up to 1
+    for (int p = 0 ; p < mNbParticles ; p++){
+        // Random number
+        randomNumber = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+        // Creation of a distribution from which the probability to draw one is proportional
+        // to the weight inputted.
+        discrete_distribution<double> index(mWeights.begin(), mWeights.end());
+        newSetParticles.push_back(mParticles[index(randomNumber)]);
+    }
+    // Replace the former set of particles by the newly created.
+    mParticles = newSetParticles;
 }
 
 Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)
