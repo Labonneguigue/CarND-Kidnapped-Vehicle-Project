@@ -13,6 +13,10 @@
 #include <math.h>
 #include <vector>
 #include "map.h"
+#include "Eigen/Dense"
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 // for portability of M_PI (Vis Studio, MinGW, etc.)
 #ifndef M_PI
@@ -46,6 +50,14 @@ struct LandmarkObs {
 	int id;				// Id of matching landmark in the map.
 	double x;			// Local (vehicle coordinates) x position of landmark observation [m]
 	double y;			// Local (vehicle coordinates) y position of landmark observation [m]
+
+    LandmarkObs(int id_ = -1,
+                double x_ = 0.0F,
+                double y_ = 0.0F)
+    : id(id_)
+    , x(x_)
+    , y(y_)
+    {}
 };
 
 /*
@@ -68,6 +80,23 @@ inline double * getError(double gt_x, double gt_y, double gt_theta, double pf_x,
 		error[2] = 2.0 * M_PI - error[2];
 	}
 	return error;
+}
+
+/**
+ Create the homogenous transformation matrix to rotate and translate
+ the car observations into the map coordinate system
+
+ @param theta Angle of the particle
+ @param xMap x position of the particle (map coords.)
+ @param yMap y position of the particle (map coords.)
+ @return Transformation matrix
+ */
+inline Eigen::MatrixXd getHomogenousTransformationMatrix(double theta, double xMap, double yMap){
+    MatrixXd H(3,3);
+    H << std::cos(theta), -std::sin(theta), xMap,
+         std::sin(theta), std::cos(theta),  yMap,
+         0,               0,                1;
+    return H;
 }
 
 /* Reads map data from a file.

@@ -33,6 +33,10 @@ struct Particle {
     , theta(theta_)
     , weight(weight_)
     {}
+
+    void print(){
+        std::cout << "Particle " << id << " " << x << " " << y << " " << theta << "\n";
+    }
 };
 
 
@@ -43,10 +47,7 @@ public:
 
 	// Constructor
 	// @param num_particles Number of particles
-	ParticleFilter()
-    : mNbParticles(1000),
-      mIsInitialized(false)
-    {}
+    ParticleFilter();
 
 	// Destructor
 	~ParticleFilter() {}
@@ -98,6 +99,9 @@ public:
 	 *   the new set of particles.
 	 */
 	void resample();
+
+    // TODO : 4 next methods have nothing to do here
+    // Should be moved into Particle structure
 
 	/*
 	 * Set a particles list of associations, along with the associations calculated world x,y coordinates
