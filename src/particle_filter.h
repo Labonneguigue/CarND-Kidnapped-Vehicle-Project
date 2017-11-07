@@ -47,7 +47,7 @@ public:
 
 	// Constructor
 	// @param num_particles Number of particles
-    ParticleFilter();
+    ParticleFilter(int nbParticles = 100);
 
 	// Destructor
 	~ParticleFilter() {}

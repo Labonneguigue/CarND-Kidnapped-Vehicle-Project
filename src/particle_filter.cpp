@@ -22,8 +22,8 @@
 #define ALMOST_ZERO 0.00001
 using namespace std;
 
-ParticleFilter::ParticleFilter()
-    : mNbParticles(100),
+ParticleFilter::ParticleFilter(int nbParticles)
+    : mNbParticles(nbParticles),
     mIsInitialized(false)
     {}
 
@@ -52,7 +52,7 @@ bool ParticleFilter::init(double x, double y, double theta, double std[]) {
         // I add the new particle to my vector of particles
         Particle newParticle(nbParticles, sample_x, sample_y, sample_theta);
 
-        newParticle.print();
+        //newParticle.print();
 
         mParticles.push_back(newParticle);
         mWeights.push_back(1.0F);
