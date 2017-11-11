@@ -40,10 +40,12 @@ int main()
     Map map;
     if (!read_map_data("../data/map_data.txt", map)) {
         if (!read_map_data("../../data/map_data.txt", map)) {
-            // To take into account the fact that xcode places
-            // the executable in a Debug folder
-            cout << "Error: Could not open map file" << endl;
-            return -1;
+            if (!read_map_data("../../../data/map_data.txt", map)) {
+                // To take into account the fact that xcode places
+                // the executable in a Debug folder
+                cout << "Error: Could not open map file" << endl;
+                return -1;
+            }
         }
     }
 
@@ -76,7 +78,13 @@ int main()
                         double sense_y = std::stod(j[1]["sense_y"].get<std::string>());
                         double sense_theta = std::stod(j[1]["sense_theta"].get<std::string>());
 
-                        assert(pf.init(sense_x, sense_y, sense_theta, sigma_pos));
+                        ParticleFilter::Config config(sense_x,
+                                                      sense_y,
+                                                      sense_theta,
+                                                      sigma_pos[0],
+                                                      sigma_pos[1],
+                                                      sigma_pos[2]);
+                        assert(pf.init(config));
                     }
                     else {
                         // Predict the vehicle's next state from previous (noiseless control) data.

@@ -28,16 +28,16 @@ ParticleFilter::ParticleFilter(int nbParticles)
     {}
 
 
-bool ParticleFilter::init(double x, double y, double theta, double std[]) {
+bool ParticleFilter::init(Config& config) {
 	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of 
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
     // This line creates 3 normal (Gaussian) distributions for x, y and theta
-    normal_distribution<double> dist_x(x, std[0]);
-    normal_distribution<double> dist_y(y, std[1]);
-    normal_distribution<double> dist_theta(theta, std[2]);
+    normal_distribution<double> dist_x(config.x, config.std_dev_x);
+    normal_distribution<double> dist_y(config.y, config.std_dev_y);
+    normal_distribution<double> dist_theta(config.theta, config.std_dev_theta);
 
     // Instantiation of a random nomber generator
     default_random_engine gen;
@@ -58,6 +58,7 @@ bool ParticleFilter::init(double x, double y, double theta, double std[]) {
         mWeights.push_back(1.0F);
     }
     mIsInitialized = true;
+    mSavedConfig = config;
     return true;
 }
 
@@ -74,13 +75,15 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     for (int nbParticles = 0; nbParticles < mNbParticles; ++nbParticles) {
         double newXpos, newYpos, newTheta;
         if (yaw_rate > ALMOST_ZERO){
-            newTheta = mParticles[nbParticles].theta + delta_t * yaw_rate;
+
+            newTheta = mParticles[nbParticles].theta + (delta_t * yaw_rate);
 
             newXpos = mParticles[nbParticles].x + ((velocity / yaw_rate) *
             (std::sin(newTheta) - std::sin(mParticles[nbParticles].theta)));
 
             newYpos = mParticles[nbParticles].y + ((velocity / yaw_rate) *
-            (std::sin(mParticles[nbParticles].theta) - std::cos(newTheta)));
+            (std::cos(mParticles[nbParticles].theta) - std::cos(newTheta)));
+
         }
         else
         {
@@ -132,9 +135,6 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
             // error
             observations[obs].id = -1;
         }
-        // TODO: Check that this is possible
-        // Improves efficiency
-        //predicted.erase(predicted.begin() + index);
     }
 }
 
@@ -151,18 +151,16 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
 
-    // I first setup the multivariate gaussian constant parameters:
+    // I first setup the multivariate gaussian constant parameters into a structure
     // The normalizing factor: the standard deviations for x and y
     // are given as std_landmark[0] and std_landmark[1]
-    double gausianNormalizingFactor = 1.0F / ( 2.0F * M_PI * std_landmark[0] * std_landmark[1]);
 
-    double twoSigXSquared = 2.0F * std_landmark[0] * std_landmark[0];
-    double twoSigYSquared = 2.0F * std_landmark[1] * std_landmark[1];
+    MultivariateGaussian multivariateGaussian(std_landmark[0], std_landmark[1]);
 
     // Sum of all assigned weight for the normalization step
     double cumulativeWeightsSum = 0.0F;
 
-    std::cout << "New particles weights ... \n";
+    //std::cout << "New particles weights ... \n";
 
     for ( int particle = 0 ; particle < mNbParticles ; particle++){
         // For each particle, I first gather in a vector every landmarks that
@@ -180,6 +178,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
                                                          map_landmarks.landmark_list[landmark].y_f));
             }
         }
+
+        assert(!reachableLandmarks.empty());
 
         // I now convert the car observations from the car coordinate system to the map one.
         vector<LandmarkObs> transformedObservations;
@@ -210,9 +210,10 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         for (int obs = 0 ; obs < transformedObservations.size() ; obs++){
             int mapObsId = transformedObservations[obs].id;
             if ( mapObsId != -1){
-                double_t expTerm = (std::pow(transformedObservations[obs].x - reachableLandmarks[mapObsId].x, 2) / twoSigXSquared) +
-                                 (std::pow(transformedObservations[obs].y - reachableLandmarks[mapObsId].y, 2) / twoSigYSquared);
-                currentWeight *= gausianNormalizingFactor * std::exp(-expTerm);
+                currentWeight *= multivariateGaussian.correlation(transformedObservations[obs].x,
+                                                                 reachableLandmarks[mapObsId].x,
+                                                                 transformedObservations[obs].y,
+                                                                 reachableLandmarks[mapObsId].y);
             }
             else
             {
@@ -221,14 +222,13 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
             }
         }
 
-        std::cout << currentWeight << "\n";
+        //std::cout << currentWeight << "\n";
         
         mWeights[particle] = currentWeight;
         mParticles[particle].weight = currentWeight;
-        //cumulativeWeightsSum += currentWeight;
     }
 
-    std::cout << "Sum of all weights : " << cumulativeWeightsSum << "\n";
+    //std::cout << "Sum of all weights : " << cumulativeWeightsSum << "\n";
 /*
     // Normalization of the weights so that their sum is 1.0F
     for (int weight = 0; weight < mNbParticles ; weight++){
@@ -252,19 +252,21 @@ void ParticleFilter::resample() {
 
     // Creation of a distribution from which the probability to draw one is proportional
     // to the weight inputted.
-    discrete_distribution<double> index(mWeights.begin(), mWeights.end());
+    discrete_distribution<int> index(mWeights.begin(), mWeights.end());
 
     // I assume the weights add up to 1
     for (int p = 0 ; p < mNbParticles ; p++){
         Particle particle = mParticles[index(rng)];
+        newSetParticles.push_back(particle);
+        /*
         newSetParticles.push_back(Particle(p,
                                            particle.x,
                                            particle.y,
                                            particle.theta,
-                                           1.0F));
+                                           1.0F));*/
     }
     // Replace the former set of particles by the newly created.
-    mParticles = newSetParticles;
+    mParticles = std::move(newSetParticles);
 }
 
 Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)

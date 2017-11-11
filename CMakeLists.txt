@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
     )
-    
+
 add_library(
     sources
     src/particle_filter.cpp
@@ -42,6 +42,7 @@ add_executable(
     unit_tests
     src/test/main_tests.cpp
     src/test/particle_filter_tests.cpp
+    src/test/helper_functions_tests.cpp
     )
 
 add_dependencies(unit_tests googletest)

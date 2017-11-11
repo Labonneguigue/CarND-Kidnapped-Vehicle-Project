@@ -40,10 +40,38 @@ struct Particle {
 };
 
 
-
 class ParticleFilter {
 	
 public:
+
+    struct Config {
+        
+        double x;     ///< Initial x position [m] (simulated estimate from GPS)
+        double y;     ///< Initial y position [m]
+        double theta; ///< Initial orientation [rad]
+
+        double std_dev_x;      ///< standard deviation of x [m]
+        double std_dev_y;      ///< standard deviation of y [m]
+        double std_dev_theta;  ///< standard deviation of theta [rad]
+
+        /** Default constructor 
+         *
+         */
+        Config(double x = 0.0,
+               double y = 0.0,
+               double theta = 0.0,
+               double std_dev_x = 0.0,
+               double std_dev_y = 0.0,
+               double std_dev_theta = 0.0)
+        : x(x)
+        , y(y)
+        , theta(theta)
+        , std_dev_x(std_dev_x)
+        , std_dev_y(std_dev_y)
+        , std_dev_theta(std_dev_theta)
+        {}
+    };
+
 
 	// Constructor
 	// @param num_particles Number of particles
@@ -55,14 +83,13 @@ public:
 	/**
 	 * init Initializes particle filter by initializing particles to Gaussian
 	 *   distribution around first position and all the weights to 1.
-	 * @param x Initial x position [m] (simulated estimate from GPS)
-	 * @param y Initial y position [m]
-	 * @param theta Initial orientation [rad]
-	 * @param std[] Array of dimension 3 [standard deviation of x [m], standard deviation of y [m]
-	 *   standard deviation of yaw [rad]]
+     *
+     * @param[in] config  Configuration structure holding x, y, theta and their
+                          respective standard deviations
+     *
      * @return bool True if the initialization was successful
 	 */
-	bool init(double x, double y, double theta, double std[]);
+	bool init(Config& config);
 
 	/**
 	 * prediction Predicts the state for the next time step
@@ -139,7 +166,7 @@ private:
     // Set of current particles
     std::vector<Particle> mParticles;
 
-    
+    Config mSavedConfig;
 };
 
 

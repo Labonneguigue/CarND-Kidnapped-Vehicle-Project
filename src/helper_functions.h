@@ -99,6 +99,26 @@ inline Eigen::MatrixXd getHomogenousTransformationMatrix(double theta, double xM
     return H;
 }
 
+struct MultivariateGaussian {
+
+    double normalizingFactor;
+    double twoSigXSquared;
+    double twoSigYSquared;
+
+    MultivariateGaussian(double std_dev_x = 0.01,
+                         double std_dev_y = 0.01)
+    : normalizingFactor( 2.0F * M_PI * std_dev_x * std_dev_x)
+    , twoSigXSquared( 2.0F * std_dev_x * std_dev_x)
+    , twoSigYSquared( 2.0F * std_dev_y * std_dev_y)
+    {}
+
+    double correlation(double x1, double x2, double y1, double y2){
+        return std::exp(-((std::pow(x1 - x2, 2) / twoSigXSquared) +
+        (std::pow(y1 - y2, 2) / twoSigYSquared))) / normalizingFactor;
+    }
+};
+
+
 /* Reads map data from a file.
  * @param filename Name of file containing map data.
  * @output True if opening and reading file was successful
