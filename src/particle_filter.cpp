@@ -41,6 +41,7 @@ bool ParticleFilter::init(Config& config) {
 
     // Instantiation of a random nomber generator
     default_random_engine gen;
+    mParticles.clear();
 
     for (int nbParticles = 0; nbParticles < mNbParticles; ++nbParticles) {
         double sample_x, sample_y, sample_theta;
@@ -72,12 +73,15 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     default_random_engine gen;
     assert(mNbParticles == mParticles.size());
 
+    NormalizeAngle(yaw_rate);
+    std::cout << "yaw_rate : " <<  yaw_rate << "\n";
+
     for (int nbParticles = 0; nbParticles < mNbParticles; ++nbParticles) {
         double newXpos, newYpos, newTheta;
         if (yaw_rate > ALMOST_ZERO){
 
             newTheta = mParticles[nbParticles].theta + (delta_t * yaw_rate);
-
+            NormalizeAngle(newTheta);
             newXpos = mParticles[nbParticles].x + ((velocity / yaw_rate) *
             (std::sin(newTheta) - std::sin(mParticles[nbParticles].theta)));
 
@@ -91,11 +95,14 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
             newYpos = mParticles[nbParticles].y + (delta_t * velocity * sin(mParticles[nbParticles].theta));
             newTheta = mParticles[nbParticles].theta;
         }
+
+//        std::cout << "newTheta : " <<  newTheta << "\n";
+
         // This line creates 3 normal (Gaussian) distributions for x, y and theta
         // to sample from.
         normal_distribution<double> dist_x(newXpos, std_pos[0]);
         normal_distribution<double> dist_y(newYpos, std_pos[1]);
-        normal_distribution<double> dist_theta(newTheta, std_pos[2]);
+        normal_distribution<double> dist_theta(newTheta, std_pos[2]*3);
 
         mParticles[nbParticles].x = dist_x(gen);
         mParticles[nbParticles].y = dist_y(gen);
@@ -156,9 +163,6 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     // are given as std_landmark[0] and std_landmark[1]
 
     MultivariateGaussian multivariateGaussian(std_landmark[0], std_landmark[1]);
-
-    // Sum of all assigned weight for the normalization step
-    double cumulativeWeightsSum = 0.0F;
 
     //std::cout << "New particles weights ... \n";
 
@@ -238,6 +242,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     }*/
 }
 
+
 void ParticleFilter::resample() {
 	// TODO: Resample particles with replacement with probability proportional to their weight. 
 	// NOTE: You may find std::discrete_distribution helpful here.
@@ -258,16 +263,18 @@ void ParticleFilter::resample() {
     for (int p = 0 ; p < mNbParticles ; p++){
         Particle particle = mParticles[index(rng)];
         newSetParticles.push_back(particle);
-        /*
-        newSetParticles.push_back(Particle(p,
-                                           particle.x,
-                                           particle.y,
-                                           particle.theta,
-                                           1.0F));*/
+
+//        newSetParticles.push_back(Particle(p,
+//                                           particle.x,
+//                                           particle.y,
+//                                           particle.theta,
+//                                           1.0F));
     }
     // Replace the former set of particles by the newly created.
     mParticles = std::move(newSetParticles);
 }
+
+
 
 Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)
 {

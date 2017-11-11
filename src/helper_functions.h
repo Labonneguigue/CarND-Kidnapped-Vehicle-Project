@@ -119,6 +119,15 @@ struct MultivariateGaussian {
 };
 
 
+inline void NormalizeAngle(double &angle){
+    while ( angle > M_PI ){
+        angle -= ( 2.0F * M_PI );
+    }
+    while ( angle <= -M_PI ) {
+        angle += ( 2.0F * M_PI );
+    }
+}
+
 /* Reads map data from a file.
  * @param filename Name of file containing map data.
  * @output True if opening and reading file was successful

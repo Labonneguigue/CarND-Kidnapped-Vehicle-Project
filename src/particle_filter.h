@@ -45,7 +45,7 @@ class ParticleFilter {
 public:
 
     struct Config {
-        
+
         double x;     ///< Initial x position [m] (simulated estimate from GPS)
         double y;     ///< Initial y position [m]
         double theta; ///< Initial orientation [rad]
