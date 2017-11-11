@@ -20,7 +20,7 @@ using Eigen::VectorXd;
 
 // for portability of M_PI (Vis Studio, MinGW, etc.)
 #ifndef M_PI
-const double M_PI = 3.14159265358979323846;
+const float M_PI = 3.14159265358979323846;
 #endif
 
 /*
@@ -28,8 +28,8 @@ const double M_PI = 3.14159265358979323846;
  */
 struct control_s {
 	
-	double velocity;	// Velocity [m/s]
-	double yawrate;		// Yaw rate [rad/s]
+	float velocity;	// Velocity [m/s]
+	float yawrate;		// Yaw rate [rad/s]
 };
 
 /*
@@ -37,9 +37,9 @@ struct control_s {
  */
 struct ground_truth {
 	
-	double x;		// Global vehicle x position [m]
-	double y;		// Global vehicle y position
-	double theta;	// Global vehicle yaw [rad]
+	float x;		// Global vehicle x position [m]
+	float y;		// Global vehicle y position
+	float theta;	// Global vehicle yaw [rad]
 };
 
 /*
@@ -48,12 +48,12 @@ struct ground_truth {
 struct LandmarkObs {
 	
 	int id;				// Id of matching landmark in the map.
-	double x;			// Local (vehicle coordinates) x position of landmark observation [m]
-	double y;			// Local (vehicle coordinates) y position of landmark observation [m]
+	float x;			// Local (vehicle coordinates) x position of landmark observation [m]
+	float y;			// Local (vehicle coordinates) y position of landmark observation [m]
 
     LandmarkObs(int id_ = -1,
-                double x_ = 0.0F,
-                double y_ = 0.0F)
+                float x_ = 0.0F,
+                float y_ = 0.0F)
     : id(id_)
     , x(x_)
     , y(y_)
@@ -66,12 +66,12 @@ struct LandmarkObs {
  * @param (x2,y2) x and y coordinates of second point
  * @output Euclidean distance between two 2D points
  */
-inline double dist(double x1, double y1, double x2, double y2) {
+inline float dist(float x1, float y1, float x2, float y2) {
 	return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
-inline double * getError(double gt_x, double gt_y, double gt_theta, double pf_x, double pf_y, double pf_theta) {
-	static double error[3];
+inline float * getError(float gt_x, float gt_y, float gt_theta, float pf_x, float pf_y, float pf_theta) {
+	static float error[3];
 	error[0] = fabs(pf_x - gt_x);
 	error[1] = fabs(pf_y - gt_y);
 	error[2] = fabs(pf_theta - gt_theta);
@@ -91,7 +91,7 @@ inline double * getError(double gt_x, double gt_y, double gt_theta, double pf_x,
  @param yMap y position of the particle (map coords.)
  @return Transformation matrix
  */
-inline Eigen::MatrixXd getHomogenousTransformationMatrix(double theta, double xMap, double yMap){
+inline Eigen::MatrixXd getHomogenousTransformationMatrix(float theta, float xMap, float yMap){
     MatrixXd H(3,3);
     H << std::cos(theta), -std::sin(theta), xMap,
          std::sin(theta), std::cos(theta),  yMap,
@@ -101,25 +101,25 @@ inline Eigen::MatrixXd getHomogenousTransformationMatrix(double theta, double xM
 
 struct MultivariateGaussian {
 
-    double normalizingFactor;
-    double twoSigXSquared;
-    double twoSigYSquared;
+    float normalizingFactor;
+    float twoSigXSquared;
+    float twoSigYSquared;
 
-    MultivariateGaussian(double std_dev_x = 0.01,
-                         double std_dev_y = 0.01)
+    MultivariateGaussian(float std_dev_x = 0.01,
+                         float std_dev_y = 0.01)
     : normalizingFactor( 2.0F * M_PI * std_dev_x * std_dev_x)
     , twoSigXSquared( 2.0F * std_dev_x * std_dev_x)
     , twoSigYSquared( 2.0F * std_dev_y * std_dev_y)
     {}
 
-    double correlation(double x1, double x2, double y1, double y2){
+    float correlation(float x1, float x2, float y1, float y2){
         return std::exp(-((std::pow(x1 - x2, 2) / twoSigXSquared) +
         (std::pow(y1 - y2, 2) / twoSigYSquared))) / normalizingFactor;
     }
 };
 
 
-inline void NormalizeAngle(double &angle){
+inline void NormalizeAngle(float &angle){
     while ( angle > M_PI ){
         angle -= ( 2.0F * M_PI );
     }
@@ -194,7 +194,7 @@ inline bool read_control_data(std::string filename, std::vector<control_s>& posi
 		std::istringstream iss_pos(line_pos);
 
 		// Declare position values:
-		double velocity, yawrate;
+		float velocity, yawrate;
 
 		// Declare single control measurement:
 		control_s meas;
@@ -237,7 +237,7 @@ inline bool read_gt_data(std::string filename, std::vector<ground_truth>& gt) {
 		std::istringstream iss_pos(line_pos);
 
 		// Declare position values:
-		double x, y, azimuth;
+		float x, y, azimuth;
 
 		// Declare single ground truth:
 		ground_truth single_gt; 
@@ -280,7 +280,7 @@ inline bool read_landmark_data(std::string filename, std::vector<LandmarkObs>& o
 		std::istringstream iss_obs(line_obs);
 
 		// Declare position values:
-		double local_x, local_y;
+		float local_x, local_y;
 
 		//read data from line to values:
 		iss_obs >> local_x;

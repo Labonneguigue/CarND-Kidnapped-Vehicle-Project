@@ -35,16 +35,16 @@ bool ParticleFilter::init(Config& config) {
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
     // This line creates 3 normal (Gaussian) distributions for x, y and theta
-    normal_distribution<double> dist_x(config.x, config.std_dev_x);
-    normal_distribution<double> dist_y(config.y, config.std_dev_y);
-    normal_distribution<double> dist_theta(config.theta, config.std_dev_theta);
+    normal_distribution<float> dist_x(config.x, config.std_dev_x);
+    normal_distribution<float> dist_y(config.y, config.std_dev_y);
+    normal_distribution<float> dist_theta(config.theta, config.std_dev_theta);
 
     // Instantiation of a random nomber generator
     default_random_engine gen;
     mParticles.clear();
 
     for (int nbParticles = 0; nbParticles < mNbParticles; ++nbParticles) {
-        double sample_x, sample_y, sample_theta;
+        float sample_x, sample_y, sample_theta;
         // I draw random samples from each gaussian distribution to
         // create the particles.
         sample_x = dist_x(gen);
@@ -63,21 +63,21 @@ bool ParticleFilter::init(Config& config) {
     return true;
 }
 
-void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
-	// TODO: Add measurements to each particle and add random Gaussian noise.
-	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
-	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
-	//  http://www.cplusplus.com/reference/random/default_random_engine/
+void ParticleFilter::prediction(float delta_t, float std_pos[], float velocity, float yaw_rate) {
 
     // Instantiation of a random nomber generator
     default_random_engine gen;
     assert(mNbParticles == mParticles.size());
 
+    // The yaw_rate angle sent from the simulator can be non-normalized
     NormalizeAngle(yaw_rate);
-    std::cout << "yaw_rate : " <<  yaw_rate << "\n";
 
     for (int nbParticles = 0; nbParticles < mNbParticles; ++nbParticles) {
-        double newXpos, newYpos, newTheta;
+        float newXpos, newYpos, newTheta;
+
+        // There are 2 different sets of equations that determine the evolution
+        // of x, y, and theta depending on whether the yaw rate is almost zero
+        // or not.
         if (yaw_rate > ALMOST_ZERO){
 
             newTheta = mParticles[nbParticles].theta + (delta_t * yaw_rate);
@@ -96,13 +96,12 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
             newTheta = mParticles[nbParticles].theta;
         }
 
-//        std::cout << "newTheta : " <<  newTheta << "\n";
-
         // This line creates 3 normal (Gaussian) distributions for x, y and theta
-        // to sample from.
-        normal_distribution<double> dist_x(newXpos, std_pos[0]);
-        normal_distribution<double> dist_y(newYpos, std_pos[1]);
-        normal_distribution<double> dist_theta(newTheta, std_pos[2]*3);
+        // to sample from. This introduces random noise that helps the particles
+        // spread over the map and fill every position locations for the car.
+        normal_distribution<float> dist_x(newXpos, std_pos[0]);
+        normal_distribution<float> dist_y(newYpos, std_pos[1]);
+        normal_distribution<float> dist_theta(newTheta, std_pos[2]*2);
 
         mParticles[nbParticles].x = dist_x(gen);
         mParticles[nbParticles].y = dist_y(gen);
@@ -111,20 +110,15 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
-	// TODO: Find the predicted measurement that is closest to each observed measurement and assign the 
-	//   observed measurement to this particular landmark.
-	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
-	//   implement this method and use it as a helper during the updateWeights phase.
-
     // The idea is to assign the id of the closest predicted landmark to the id member of the observations
     // landmarks.
 
-    double distance;
-    double minDistance;
+    float distance;
+    float minDistance;
     int index;
 
     for (int obs = 0 ; obs < observations.size() ; obs++){
-        minDistance = std::numeric_limits<double>::max();
+        minDistance = std::numeric_limits<float>::max();
         index = 0;
         for (int pre = 0 ; pre < predicted.size() ; pre++){
             distance = dist(observations[obs].x, observations[obs].y, predicted[pre].x, predicted[pre].y);
@@ -145,26 +139,13 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
     }
 }
 
-void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
+void ParticleFilter::updateWeights(float sensor_range, float std_landmark[], 
 		const std::vector<LandmarkObs> &observations, const Map &map_landmarks) {
-	// TODO: Update the weights of each particle using a mult-variate Gaussian distribution. You can read
-	//   more about this distribution here: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
-	// NOTE: The observations are given in the VEHICLE'S coordinate system. Your particles are located
-	//   according to the MAP'S coordinate system. You will need to transform between the two systems.
-	//   Keep in mind that this transformation requires both rotation AND translation (but no scaling).
-	//   The following is a good resource for the theory:
-	//   https://www.willamette.edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm
-	//   and the following is a good resource for the actual equation to implement (look at equation 
-	//   3.33
-	//   http://planning.cs.uiuc.edu/node99.html
-
     // I first setup the multivariate gaussian constant parameters into a structure
     // The normalizing factor: the standard deviations for x and y
     // are given as std_landmark[0] and std_landmark[1]
 
     MultivariateGaussian multivariateGaussian(std_landmark[0], std_landmark[1]);
-
-    //std::cout << "New particles weights ... \n";
 
     for ( int particle = 0 ; particle < mNbParticles ; particle++){
         // For each particle, I first gather in a vector every landmarks that
@@ -226,20 +207,9 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
             }
         }
 
-        //std::cout << currentWeight << "\n";
-        
         mWeights[particle] = currentWeight;
         mParticles[particle].weight = currentWeight;
     }
-
-    //std::cout << "Sum of all weights : " << cumulativeWeightsSum << "\n";
-/*
-    // Normalization of the weights so that their sum is 1.0F
-    for (int weight = 0; weight < mNbParticles ; weight++){
-        mWeights[weight] /= cumulativeWeightsSum;
-        mParticles[weight].weight = mWeights[weight];
-        std::cout << mParticles[weight].weight << "\n";
-    }*/
 }
 
 
@@ -263,20 +233,13 @@ void ParticleFilter::resample() {
     for (int p = 0 ; p < mNbParticles ; p++){
         Particle particle = mParticles[index(rng)];
         newSetParticles.push_back(particle);
-
-//        newSetParticles.push_back(Particle(p,
-//                                           particle.x,
-//                                           particle.y,
-//                                           particle.theta,
-//                                           1.0F));
     }
     // Replace the former set of particles by the newly created.
     mParticles = std::move(newSetParticles);
 }
 
 
-
-Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)
+Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<float> sense_x, std::vector<float> sense_y)
 {
 	//particle: the particle to assign each listed association, and association's (x,y) world coordinates mapping to
 	// associations: The landmark id that goes along with each listed association
@@ -307,7 +270,7 @@ string ParticleFilter::getAssociations(Particle best)
 }
 string ParticleFilter::getSenseX(Particle best)
 {
-	vector<double> v = best.sense_x;
+	vector<float> v = best.sense_x;
 	stringstream ss;
     copy( v.begin(), v.end(), ostream_iterator<float>(ss, " "));
     string s = ss.str();
@@ -316,7 +279,7 @@ string ParticleFilter::getSenseX(Particle best)
 }
 string ParticleFilter::getSenseY(Particle best)
 {
-	vector<double> v = best.sense_y;
+	vector<float> v = best.sense_y;
 	stringstream ss;
     copy( v.begin(), v.end(), ostream_iterator<float>(ss, " "));
     string s = ss.str();

@@ -13,30 +13,29 @@
 
 struct Particle {
 
-	int id;
-	double x;
-	double y;
-	double theta;
-	double weight;
+	int id;     ///< Identification number of the particle
+	float x;    ///< x position in map/global coordinates [meters]
+	float y;    ///< y position in map/global coordinates [meters]
+	float theta; ///< Angle of the car relative to the horizontal [rad]
+	float weight; ///< Probability that this particle is at the car location
 	std::vector<int> associations;
-	std::vector<double> sense_x;
-	std::vector<double> sense_y;
+	std::vector<float> sense_x;
+	std::vector<float> sense_y;
 
+    /** Default constructor
+     *
+     */
     Particle(int id_ = -1,
-             double x_ = 0.0F,
-             double y_ = 0.0F,
-             double theta_ = 0.0F,
-             double weight_ = 1.0F)
+             float x_ = 0.0F,
+             float y_ = 0.0F,
+             float theta_ = 0.0F,
+             float weight_ = 1.0F)
     : id(id_)
     , x(x_)
     , y(y_)
     , theta(theta_)
     , weight(weight_)
     {}
-
-    void print(){
-        std::cout << "Particle " << id << " " << x << " " << y << " " << theta << "\n";
-    }
 };
 
 
@@ -46,23 +45,23 @@ public:
 
     struct Config {
 
-        double x;     ///< Initial x position [m] (simulated estimate from GPS)
-        double y;     ///< Initial y position [m]
-        double theta; ///< Initial orientation [rad]
+        float x;     ///< Initial x position [m] (simulated estimate from GPS)
+        float y;     ///< Initial y position [m]
+        float theta; ///< Initial orientation [rad]
 
-        double std_dev_x;      ///< standard deviation of x [m]
-        double std_dev_y;      ///< standard deviation of y [m]
-        double std_dev_theta;  ///< standard deviation of theta [rad]
+        float std_dev_x;      ///< standard deviation of x [m]
+        float std_dev_y;      ///< standard deviation of y [m]
+        float std_dev_theta;  ///< standard deviation of theta [rad]
 
         /** Default constructor 
          *
          */
-        Config(double x = 0.0,
-               double y = 0.0,
-               double theta = 0.0,
-               double std_dev_x = 0.0,
-               double std_dev_y = 0.0,
-               double std_dev_theta = 0.0)
+        Config(float x = 0.0,
+               float y = 0.0,
+               float theta = 0.0,
+               float std_dev_x = 0.0,
+               float std_dev_y = 0.0,
+               float std_dev_theta = 0.0)
         : x(x)
         , y(y)
         , theta(theta)
@@ -73,11 +72,16 @@ public:
     };
 
 
-	// Constructor
-	// @param num_particles Number of particles
-    ParticleFilter(int nbParticles = 100);
+	/** Constructor
+     *
+	 * @param num_particles Number of particles
+     *
+     */
+    ParticleFilter(int nbParticles = 40);
 
-	// Destructor
+	/** Destructor
+     *
+     */
 	~ParticleFilter() {}
 
 	/**
@@ -100,7 +104,7 @@ public:
 	 * @param velocity Velocity of car from t to t+1 [m/s]
 	 * @param yaw_rate Yaw rate of car from t to t+1 [rad/s]
 	 */
-	void prediction(double delta_t, double std_pos[], double velocity, double yaw_rate);
+	void prediction(float delta_t, float std_pos[], float velocity, float yaw_rate);
 	
 	/**
 	 * dataAssociation Finds which observations correspond to which landmarks (likely by using
@@ -118,7 +122,7 @@ public:
 	 * @param observations Vector of landmark observations
 	 * @param map Map class containing map landmarks
 	 */
-	void updateWeights(double sensor_range, double std_landmark[], const std::vector<LandmarkObs> &observations,
+	void updateWeights(float sensor_range, float std_landmark[], const std::vector<LandmarkObs> &observations,
 			const Map &map_landmarks);
 	
 	/**
@@ -127,46 +131,44 @@ public:
 	 */
 	void resample();
 
-    // TODO : 4 next methods have nothing to do here
-    // Should be moved into Particle structure
-
-	/*
+	/**
 	 * Set a particles list of associations, along with the associations calculated world x,y coordinates
 	 * This can be a very useful debugging tool to make sure transformations are correct and assocations correctly connected
 	 */
-	Particle SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y);
+	Particle SetAssociations(Particle particle, std::vector<int> associations, std::vector<float> sense_x, std::vector<float> sense_y);
 	
 	std::string getAssociations(Particle best);
 	std::string getSenseX(Particle best);
 	std::string getSenseY(Particle best);
 
 	/**
-	 * initialized Returns whether particle filter is initialized yet or not.
+	 * Returns whether particle filter is initialized yet or not.
 	 */
 	inline const bool initialized() const {
 		return mIsInitialized;
 	}
 
+
+    /**
+     Returns the set of particles
+
+     @return mParticules Vector of Particle that are tracking the car
+     */
     inline const std::vector<Particle>& particles(){
         return mParticles;
     }
 
 private:
 
-    // Number of particles to draw
-    const int mNbParticles;
+    const int mNbParticles; ///< Number of particles to draw
 
-    // Flag, if filter is initialized
-    // TODO: delete that
-    bool mIsInitialized;
+    bool mIsInitialized;    ///< Flag, if filter is initialized
 
-    // Vector of weights of all particles
-    std::vector<double> mWeights;
+    std::vector<float> mWeights; ///< Vector of weights of all particles
 
-    // Set of current particles
-    std::vector<Particle> mParticles;
+    std::vector<Particle> mParticles; ///< Set of current particles
 
-    Config mSavedConfig;
+    Config mSavedConfig;  ///< Configuration for initialization
 };
 
 

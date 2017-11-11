@@ -30,11 +30,11 @@ int main()
     uWS::Hub h;
 
     //Set up parameters here
-    double delta_t = 0.1; // Time elapsed between measurements [sec]
-    double sensor_range = 50; // Sensor range [m]
+    float delta_t = 0.1; // Time elapsed between measurements [sec]
+    float sensor_range = 50; // Sensor range [m]
 
-    double sigma_pos [3] = {0.3, 0.3, 0.01}; // GPS measurement uncertainty [x [m], y [m], theta [rad]]
-    double sigma_landmark [2] = {0.3, 0.3}; // Landmark measurement uncertainty [x [m], y [m]]
+    float sigma_pos [3] = {0.3, 0.3, 0.01}; // GPS measurement uncertainty [x [m], y [m], theta [rad]]
+    float sigma_landmark [2] = {0.3, 0.3}; // Landmark measurement uncertainty [x [m], y [m]]
 
     // Read map data
     Map map;
@@ -74,9 +74,9 @@ int main()
                     if (!pf.initialized()) {
 
                         // Sense noisy position data from the simulator
-                        double sense_x = std::stod(j[1]["sense_x"].get<std::string>());
-                        double sense_y = std::stod(j[1]["sense_y"].get<std::string>());
-                        double sense_theta = std::stod(j[1]["sense_theta"].get<std::string>());
+                        float sense_x = std::stod(j[1]["sense_x"].get<std::string>());
+                        float sense_y = std::stod(j[1]["sense_y"].get<std::string>());
+                        float sense_theta = std::stod(j[1]["sense_theta"].get<std::string>());
 
                         ParticleFilter::Config config(sense_x,
                                                       sense_y,
@@ -88,8 +88,8 @@ int main()
                     }
                     else {
                         // Predict the vehicle's next state from previous (noiseless control) data.
-                        double previous_velocity = std::stod(j[1]["previous_velocity"].get<std::string>());
-                        double previous_yawrate = std::stod(j[1]["previous_yawrate"].get<std::string>());
+                        float previous_velocity = std::stod(j[1]["previous_velocity"].get<std::string>());
+                        float previous_yawrate = std::stod(j[1]["previous_yawrate"].get<std::string>());
 
                         pf.prediction(delta_t, sigma_pos, previous_velocity, previous_yawrate);
                     }
@@ -129,9 +129,9 @@ int main()
                     // Calculate and output the average weighted error of the particle filter over all time steps so far.
                     vector<Particle> particles = pf.particles();
                     int num_particles = particles.size();
-                    double highest_weight = -1.0;
+                    float highest_weight = -1.0;
                     Particle best_particle;
-                    double weight_sum = 0.0;
+                    float weight_sum = 0.0;
                     for (int i = 0; i < num_particles; ++i) {
                         if (particles[i].weight > highest_weight) {
                             highest_weight = particles[i].weight;
