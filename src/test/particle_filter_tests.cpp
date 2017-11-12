@@ -73,8 +73,9 @@ TEST_F(ParticleFilterTest, DataAssociationTest) {
 TEST_F(ParticleFilterTest, InitTest) {
 
     // Case 1 : Standard deviations set to 0
-    float std_devs[3] = {0.0F, 0.0F, 0.0F};
-    mParticleFilter.init(5.0F, 5.0F, 10.0F, std_devs);
+    //float std_devs[3] = {0.0F, 0.0F, 0.0F};
+    ParticleFilter::Config config(5.0F, 5.0F, 10.0F, 0.0F, 0.0F, 0.0F);
+    mParticleFilter.init(config);
     std::vector<Particle> particles = mParticleFilter.particles();
 
     ASSERT_EQ(particles.size(), mNbParticles);
